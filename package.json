@@ -1,0 +1,15 @@
+{
+  "name": "greeter-bot",
+  "version": "1.0.0",
+  "description": "first discord bot",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app"
+  },
+  "author": "bienfromage",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^11.3.0",
+    "nodejs-latest": "^1.1.0"
+  }
+}
