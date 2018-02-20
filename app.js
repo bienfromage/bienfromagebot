@@ -84,7 +84,7 @@ client.on("message", message => {
   }
   
   if(command === "whoisthegreatest"){
-    message.reply("Bienfromage is the greatest");
+    message.reply("Arjun is the greatest");
   }
 });
 
