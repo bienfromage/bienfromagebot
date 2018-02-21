@@ -3,6 +3,7 @@ const Discord = require("discord.js");
 
 var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
 var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+const token = process.env.BOT_ID;
 
 var http = require('http');
 http.createServer(function (req, res) {
@@ -26,7 +27,7 @@ client.on("ready", () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
   // Example of changing the bot's playing game to something useful. `client.user` is what the
   // docs refer to as the "ClientUser".
-  client.user.setGame(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers`);
 });
 
 client.on("guildCreate", guild => {
@@ -80,7 +81,6 @@ client.on("message", message => {
   
   if(command === "test"){
     message.reply("This is the song that never ends \n it just goes on and on my friends");
-    console.log("test");
   }
   
   if(command === "whoisthegreatest"){
@@ -88,4 +88,4 @@ client.on("message", message => {
   }
 });
 
-client.login(config.token);
+client.login(process.env.BOT_ID);
