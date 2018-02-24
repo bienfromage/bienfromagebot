@@ -19,8 +19,8 @@ const client = new Discord.Client();
 
 // Here we load the config.json file that contains our token and our prefix values.
 const config = require("./config.json");
-// config.token contains the bot's token
 // config.prefix contains the message prefix.
+// we have not done so because of GitHub security, but if we wished we could put our bot token in config.json as well
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -79,8 +79,40 @@ client.on("message", message => {
     message.channel.send(sayMessage);
   }
   
-  if(command === "test"){
-    message.reply("This is the song that never ends \n it just goes on and on my friends");
+  if(command === "stat"){
+    try{
+      // Get messages
+      message.channel.fetchMessages({ limit: 50 })
+        .then(messages => {
+          var arr = Array.from(messages.values());
+          var users = [];
+          for(i=0; i<arr.length;i++){
+            var hasMatch = false;
+            for(z = 0; z<users.length;z++){
+              if(users[z].name === arr[i].author.username){
+                users[z].value++;
+                hasMatch = true;
+              }
+            }
+            if(!hasMatch){
+              users.push({name:arr[i].author.username,value:1});
+            }
+          }
+          users.sort(function(first,second){
+            return second.value-first.value;
+          });
+          
+          if(users.length===1)
+            message.reply("Statistics Check! In the Past fifty messages, the user who sent the most messages was"+users[0].name);
+          if(users.length===2)
+            message.reply("Statistics Check! In the Past fifty messages, the users who sent the most messages were 1."+users[0].name+"\n2."+users[1].name);
+            if(users.length>2)
+            message.reply("Statistics Check! In the Past fifty messages, the users who sent the most messages were 1."+users[0].name+"\n2."+users[1].name+"\n3."+users[2].name);
+        })
+        .catch(console.error);
+    }catch(e){
+      message.channel.send("Error: you are attempting to access this function from an environment that is not a server");
+    }
   }
   
   if(command === "whoisthegreatest"){
