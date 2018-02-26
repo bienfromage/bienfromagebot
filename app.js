@@ -121,7 +121,8 @@ client.on("message", message => {
     +ping - check for connection
     +say - echo arguments
     +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?`);
+    +whoisthegreatest - who is the greatest?
+    +goat - sets a user's nickname to goat(WIP)`);
   }
   
   if(command === "whoisthegreatest"){
