@@ -33,13 +33,13 @@ client.on("ready", () => {
 client.on("guildCreate", guild => {
   // This event triggers when the bot joins a guild.
   console.log(`New guild joined: ${guild.name} (id: ${guild.id}). This guild has ${guild.memberCount} members!`);
-  client.user.setGame(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers`);
 });
 
 client.on("guildDelete", guild => {
   // this event triggers when the bot is removed from a guild.
   console.log(`I have been removed from: ${guild.name} (id: ${guild.id})`);
-  client.user.setGame(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers`);
 });
 
 
@@ -82,7 +82,7 @@ client.on("message", message => {
   if(command === "stat"){
     try{
       // Get messages
-      message.channel.fetchMessages({ limit: 50 })
+      message.channel.fetchMessages()
         .then(messages => {
           var arr = Array.from(messages.values());
           var users = [];
@@ -103,16 +103,25 @@ client.on("message", message => {
           });
           
           if(users.length===1)
-            message.reply("Statistics Check! In the Past fifty messages, the user who sent the most messages was"+users[0].name);
+            message.reply("Statistics Check! In the Past 100 messages on this channel, the user who sent the most messages was\n"+users[0].name);
           if(users.length===2)
-            message.reply("Statistics Check! In the Past fifty messages, the users who sent the most messages were 1."+users[0].name+"\n2."+users[1].name);
+            message.reply("Statistics Check! In the Past 100 messages on this channel, the users who sent the most messages were \n1."+users[0].name+"\n2."+users[1].name);
             if(users.length>2)
-            message.reply("Statistics Check! In the Past fifty messages, the users who sent the most messages were 1."+users[0].name+"\n2."+users[1].name+"\n3."+users[2].name);
+            message.reply("Statistics Check! In the Past 100 messages on this channel, the users who sent the most messages were \n1."+users[0].name+"\n2."+users[1].name+"\n3."+users[2].name);
         })
         .catch(console.error);
     }catch(e){
       message.channel.send("Error: you are attempting to access this function from an environment that is not a server");
     }
+  }
+  
+  if(command === "help"){
+    message.reply(`Here is a list of available commands:
+    +help - show available commands
+    +ping - check for connection
+    +say - echo arguments
+    +stat - statistics on users's current text channel
+    +whoisthegreatest - who is the greatest?`);
   }
   
   if(command === "whoisthegreatest"){
