@@ -61,14 +61,22 @@ client.on("message", message => {
   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
   
-  // Let's go with a few common example commands! Feel free to delete or change those.
+  //Lists available commands.
+  if(command === "help"){
+    message.reply(`Here is a list of available commands:
+    +help - show available commands
+    +ping - check for connection
+    +say - echo arguments
+    +stat - statistics on users's current text channel
+    +whoisthegreatest - who is the greatest?`);
+  }
   
+  //check connection command
   if(command === "ping") {
-    // Calculates ping between sending a message and editing it, giving a nice round-trip latency.
-    // The second ping is an average latency between the bot and the websocket server (one-way, not round-trip)
     message.channel.send("pong");
   }
   
+  //echo command
   if(command === "say") {
     // makes the bot say something and delete the message. As an example, it's open to anyone to use.
     // To get the "message" itself we join the `args` back into a string with spaces:
@@ -79,6 +87,7 @@ client.on("message", message => {
     message.channel.send(sayMessage);
   }
   
+  //take the past 100 messages, figure out who sent the most
   if(command === "stat"){
     try{
       // Get messages
@@ -86,9 +95,11 @@ client.on("message", message => {
         .then(messages => {
           var arr = Array.from(messages.values());
           var users = [];
+          //loop through array of messages
           for(i=0; i<arr.length;i++){
             var hasMatch = false;
             for(z = 0; z<users.length;z++){
+              //add messages to array to indicate who sent the most
               if(users[z].name === arr[i].author.username){
                 users[z].value++;
                 hasMatch = true;
@@ -115,15 +126,7 @@ client.on("message", message => {
     }
   }
   
-  if(command === "help"){
-    message.reply(`Here is a list of available commands:
-    +help - show available commands
-    +ping - check for connection
-    +say - echo arguments
-    +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?`);
-  }
-  
+  //hehe
   if(command === "whoisthegreatest"){
     message.reply("Bienfromage is the greatest");
   }
