@@ -128,7 +128,7 @@ client.on("message", message => {
   
   //hehe
   if(command === "whoisthegreatest"){
-    message.reply("Bienfromage is the greatest");
+    message.reply("Lord Grape is the greatest");
   }
 });
 
