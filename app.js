@@ -8,7 +8,7 @@ const token = process.env.BOT_ID;
 var http = require('http');
 http.createServer(function (req, res) {
   res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.write('Hello World!');
+  res.write('BienfromageBot server');
   res.end();
 }).listen(server_port,server_ip_address);
 
@@ -68,7 +68,12 @@ client.on("message", message => {
     +ping - check for connection
     +say - echo arguments
     +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?`);
+    +whoisthegreatest - who is the greatest?
+    
+    Admin comands:
+    +create <name> - create channel of given name
+    +createCat <name> - create a new channel category of given name
+    +delete - delete current channel`);
   }
   
   //check connection command
@@ -120,7 +125,9 @@ client.on("message", message => {
             if(users.length>2)
             message.reply("Statistics Check! In the Past 100 messages on this channel, the users who sent the most messages were \n1."+users[0].name+"\n2."+users[1].name+"\n3."+users[2].name);
         })
-        .catch(console.error);
+        .catch(function(error){
+          message.channel.send(error);
+        });
     }catch(e){
       message.channel.send("Error: you are attempting to access this function from an environment that is not a server");
     }
@@ -129,6 +136,39 @@ client.on("message", message => {
   //hehe
   if(command === "whoisthegreatest"){
     message.reply("Lord Grape is the greatest");
+  }
+  
+  //Admin commands
+  if(message.channel.type !== "dm"){
+    if(message.member.hasPermission("ADMINISTRATOR")){
+      if(command === "create"){
+        message.guild.createChannel(args[0], "text")
+        .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that this bot has permission to create channels\n"+error);
+        });
+      }
+      
+      if(command === "createcat"){
+        message.guild.createChannel(args[0], "category")
+        .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that this bot has permission to create categories\n"+error);
+        });
+      }
+      
+      if(command === "delete"){
+        message.channel.delete("BienfromageBot deleted the channel")
+        .then(channel => {console.log(`Deleted channel ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send(error);
+        });
+      }
+    }else{
+      message.channel.send("Error: you do not have permission to use administrator commands");
+    }
+  }else{
+    message.channel.send("Error: You are trying to run guild commands in a Direct Message because science");
   }
 });
 
