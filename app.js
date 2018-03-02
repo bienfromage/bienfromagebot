@@ -71,6 +71,7 @@ client.on("message", message => {
     +whoisthegreatest - who is the greatest?
     
     Admin comands:
+    +ban <@mentionUsername> <reason> - ban a user
     +create <name> - create channel of given name
     +createCat <name> - create a new channel category of given name
     +delete - delete current channel`);
@@ -141,6 +142,39 @@ client.on("message", message => {
   //Admin commands
   if(message.channel.type !== "dm"){
     if(message.member.hasPermission("ADMINISTRATOR")){
+      if(command === "ban"){
+        try{
+          var mentions = message.mentions.members.array();
+          if(mentions[0].bannable){
+            var reason = "";
+            for(i = 1; i < args.length;i++){
+              reason+=args[i]+" ";
+            }
+            mentions[0].createDM()
+            .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you`)
+              .then(dmMessage=>{
+                mentions[0].ban(reason);
+                message.reply(`You banned ${mentions[0].user.username}.`);
+              })
+              .catch((error)=>{
+                message.reply("Error sending reason for ban");
+                mentions[0].ban(reason);
+                message.reply(`You banned ${mentions[0].user.username}.`);
+              });
+            })
+            .catch((error)=>{
+              message.reply("Failed to send user reason for ban");
+              mentions[0].ban(reason);
+              message.reply(`You banned ${mentions[0].user.username}.`);
+            });
+          }else{
+            message.reply(`${mentions[0].user.username} is unbannable. :grin:`);
+          }
+        }catch(error){
+          message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+        }
+      }
+      
       if(command === "create"){
         message.guild.createChannel(args[0], "text")
         .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
