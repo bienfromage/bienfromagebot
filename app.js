@@ -74,16 +74,17 @@ client.on("message", message => {
     +ban <@mentionUsername> <reason> - ban a user
     +create <name> - create channel of given name
     +createCat <name> - create a new channel category of given name
-    +delete - delete current channel`);
+    +delete - delete current channel
+    +demote <@mentionUsername> - remove a users's server roles`);
   }
   
   //check connection command
-  if(command === "ping") {
+  else if(command === "ping") {
     message.channel.send("pong");
   }
   
   //echo command
-  if(command === "say") {
+  else if(command === "say") {
     // makes the bot say something and delete the message. As an example, it's open to anyone to use.
     // To get the "message" itself we join the `args` back into a string with spaces:
     const sayMessage = args.join(" ");
@@ -94,7 +95,7 @@ client.on("message", message => {
   }
   
   //take the past 100 messages, figure out who sent the most
-  if(command === "stat"){
+  else if(command === "stat"){
     try{
       // Get messages
       message.channel.fetchMessages()
@@ -135,74 +136,86 @@ client.on("message", message => {
   }
   
   //hehe
-  if(command === "whoisthegreatest"){
+  else if(command === "whoisthegreatest"){
     message.reply("Lord Grape is the greatest");
   }
   
   //Admin commands
-  if(message.channel.type !== "dm"){
-    if(message.member.hasPermission("ADMINISTRATOR")){
-      if(command === "ban"){
-        try{
-          var mentions = message.mentions.members.array();
-          if(mentions[0].bannable){
-            var reason = "";
-            for(i = 1; i < args.length;i++){
-              reason+=args[i]+" ";
-            }
-            mentions[0].createDM()
-            .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you`)
-              .then(dmMessage=>{
-                mentions[0].ban(reason);
-                message.reply(`You banned ${mentions[0].user.username}.`);
-              })
-              .catch((error)=>{
-                message.reply("Error sending reason for ban");
-                mentions[0].ban(reason);
-                message.reply(`You banned ${mentions[0].user.username}.`);
-              });
+  else if(message.channel.type!=="dm" && message.member.hasPermission("ADMINISTRATOR")){//make sure we are in a server and have admin powers
+    if(command === "ban"){//ban user
+      try{
+        var mentions = message.mentions.members.array();//find all the mentions of other users
+        
+        if(mentions[0].bannable){//make sure they're not trying to ban an owner
+          var reason = "";
+          if(args.length <2){
+            reason = "an unspecified reason";
+          }
+          for(i = 1; i < args.length;i++){
+            reason+=args[i]+" ";
+          }//the rest of the arguments become reason for ban
+          mentions[0].createDM()//Direct Message the user the reason for the ban
+          .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you`)
+            .then(dmMessage=>{//then ban them
+              mentions[0].ban(reason);
+              message.reply(`You banned ${mentions[0].user.username}.`);
             })
-            .catch((error)=>{
-              message.reply("Failed to send user reason for ban");
+            .catch((error)=>{//if there's an error, say so and ban them anyway
+              message.reply("Error sending reason for ban");
               mentions[0].ban(reason);
               message.reply(`You banned ${mentions[0].user.username}.`);
             });
-          }else{
-            message.reply(`${mentions[0].user.username} is unbannable. :grin:`);
-          }
-        }catch(error){
-          message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+          })
+          .catch((error)=>{//if there's an error creating a DM, still ban the users
+            message.reply("Failed to send user reason for ban");
+            mentions[0].ban(reason);
+            message.reply(`You banned ${mentions[0].user.username}.`);
+          });
+        }else{//if user is unbannable, print error
+          message.reply(`${mentions[0].user.username} is unbannable. :grin:
+          the bot may not have high enough permissions to ban the user`);
         }
+      }catch(error){//notify user that the +ban function encountered an error
+        message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
       }
-      
-      if(command === "create"){
-        message.guild.createChannel(args[0], "text")
-        .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
-        .catch(function(error){
-            message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that this bot has permission to create channels\n"+error);
-        });
+    }
+    
+    else if(command === "create"){//create a channel
+      message.guild.createChannel(args[0], "text")
+      .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
+      .catch(function(error){
+          message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that this bot has permission to create channels\n"+error);
+      });
+    }
+    
+    else if(command === "createcat"){
+      message.guild.createChannel(args[0], "category")
+      .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
+      .catch(function(error){
+          message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that this bot has permission to create categories\n"+error);
+      });
+    }
+    
+    else if(command === "delete"){
+      message.channel.delete("BienfromageBot deleted the channel")
+      .then(channel => {console.log(`Deleted channel ${channel.name}`);})
+      .catch(function(error){
+          message.channel.send(error);
+      });
+    }
+    
+    else if(command === "demote"){
+      try{
+      var mentions = message.mentions.members.array();//find all the mentions of other users
+        mentions[0].setRoles([])//set user roles to none
+          .then(member => message.reply(`demoted ${mentions[0].user.username}`))
+          .catch(error=>message.reply(`Failed to demote ${mentions[0].user.username}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
+      }catch(error){
+        message.reply(`Error: make sure your command is in the form '+demote [@mentionUsername]'`);
       }
-      
-      if(command === "createcat"){
-        message.guild.createChannel(args[0], "category")
-        .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
-        .catch(function(error){
-            message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that this bot has permission to create categories\n"+error);
-        });
-      }
-      
-      if(command === "delete"){
-        message.channel.delete("BienfromageBot deleted the channel")
-        .then(channel => {console.log(`Deleted channel ${channel.name}`);})
-        .catch(function(error){
-            message.channel.send(error);
-        });
-      }
-    }else{
-      message.channel.send("Error: you do not have permission to use administrator commands");
     }
   }else{
-    message.channel.send("Error: You are trying to run guild commands in a Direct Message because science");
+    message.reply(`Command not recognized. If you typed an admin command, make sure you have admin privlidges and are not in a DM. To see the command list, type '+help'`);
   }
 });
 
