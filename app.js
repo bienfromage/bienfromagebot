@@ -60,8 +60,31 @@ client.on("message", message => {
   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
   
+  if(message.channel.type === "dm" && command === "dev"){
+    try{
+    if(args[0] === "ping"){
+      message.reply(`Sending your data to base`);
+      console.log(message.author);
+    }else if(args[0] === "test"){
+      const devUsernames = process.env.DEV_USERNAME.split(',');
+      const devIds = process.env.DEV_ID.split(',');
+      var index = -1;
+      for(i = 0; i < devIds.length; i++){
+        if(devIds[i] === message.author.id)
+          index = i;
+      }
+      if(index > -1 && devUsernames[index] === message.author.username){
+        message.reply(`You have developer access`);
+      }else{
+        message.reply('You are not a developer');
+      }
+    }}catch(e){
+      message.reply(`Developer process failed for an unclear reason`);
+    }
+  }
+  
   //Lists available commands.
-  if(command === "help"){
+  else if(command === "help"){
     message.reply(`Here is a list of available commands:
     +help - show available commands
     +ping - check for connection
