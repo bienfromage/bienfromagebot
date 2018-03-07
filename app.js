@@ -63,8 +63,8 @@ client.on("message", message => {
   if(message.channel.type === "dm" && command === "dev"){
     try{
     if(args[0] === "ping"){
-      message.reply(`Sending your data to base`);
-      console.log(message.author);
+      message.reply(`username: ${message.author.username}
+      id: ${message.author.id}`);
     }else if(args[0] === "test"){
       const devUsernames = process.env.DEV_USERNAME.split(',');
       const devIds = process.env.DEV_ID.split(',');
