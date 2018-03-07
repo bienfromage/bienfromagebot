@@ -42,7 +42,6 @@ client.on("guildDelete", guild => {
   client.user.setActivity(`on ${client.guilds.size} servers`);
 });
 
-
 client.on("message", message => {
   // This event will run on every single message received, from any channel or DM.
   
@@ -77,7 +76,8 @@ client.on("message", message => {
     +createCat <name> - create a new channel category of given name
     +delete - delete current channel
     +demote <@mentionUsername> - remove a users's server roles
-    +kick <@mentionUsername> <reason> kick a user`);
+    +kick <@mentionUsername> <reason> kick a user
+    +leave - remove me from the server`);
   }
   
   //check connection command
@@ -277,6 +277,20 @@ client.on("message", message => {
         }
       }catch(error){//notify user that the +ban function encountered an error
         message.channel.send("An error occured. Make sure your command is in the form '+kick [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+      }
+    }
+    
+    else if(command === "leave"){
+      try{
+        message.guild.leave()
+        .then(console.log(`Left guild ${message.guild.name}`))
+        .catch(console.error);
+      }catch(error){
+        try{
+          message.reply(`Error kicking bot`)
+        }catch(e){
+          console.log(error);
+        }
       }
     }
   }else{
