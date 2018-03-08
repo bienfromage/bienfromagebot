@@ -62,24 +62,33 @@ client.on("message", message => {
   
   if(message.channel.type === "dm" && command === "dev"){
     try{
-    if(args[0] === "ping"){
-      message.reply(`username: ${message.author.username}
-      id: ${message.author.id}`);
-    }else if(args[0] === "test"){
-      const devUsernames = process.env.DEV_USERNAME.split(',');
-      const devIds = process.env.DEV_ID.split(',');
-      var index = -1;
-      for(i = 0; i < devIds.length; i++){
-        if(devIds[i] === message.author.id)
-          index = i;
-      }
-      if(index > -1 && devUsernames[index] === message.author.username){
-        message.reply(`You have developer access`);
+      if(args[0] && args[0] === "ping"){
+        message.reply(`username: ${message.author.username}
+        id: ${message.author.id}`);
       }else{
-        message.reply('You are not a developer');
+        const devUsernames = process.env.DEV_USERNAME.split(',');
+        const devIds = process.env.DEV_ID.split(',');
+        var index = -1;
+        for(i = 0; i < devIds.length; i++){
+          if(devIds[i] === message.author.id)
+            index = i;
+        }
+        if(index > -1 && devUsernames[index] === message.author.username){
+          message.reply(`You have developer access`);
+          if(args[0]){
+            if(args[0] === "help"){
+              message.reply(`Developer Commands:
+      +dev - check if you have developer access
+      +dev help - get a list of dev commands
+      +dev ping - return user information`);
+            }
+          }
+        }else{
+          message.reply('You are not a developer');
+        }
       }
-    }}catch(e){
-      message.reply(`Developer process failed for an unclear reason`);
+    }catch(e){
+      message.reply(`Developer command failed for an unclear reason. Makes sure your command is in the form '+dev [command]'`);
     }
   }
   
@@ -92,7 +101,7 @@ client.on("message", message => {
     +stat - statistics on users's current text channel
     +whoisthegreatest - who is the greatest?
     
-    Admin comands:
+    Admin commands:
     +addRole <@mentionUsername> - give a user an additional role
     +ban <@mentionUsername> <reason> - ban a user
     +create <name> - create channel of given name
@@ -100,7 +109,11 @@ client.on("message", message => {
     +delete - delete current channel
     +demote <@mentionUsername> - remove a users's server roles
     +kick <@mentionUsername> <reason> kick a user
-    +leave - remove me from the server`);
+    +leave - remove me from the server
+    
+    DM commands (developers only):
+    +dev ping - reply with your user info
+    +dev help - list developer commands (restricted command)`);
   }
   
   //check connection command
