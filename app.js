@@ -27,7 +27,7 @@ client.on("ready", () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
   // Example of changing the bot's playing game to something useful. `client.user` is what the
   // docs refer to as the "ClientUser".
-  client.user.setActivity(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers | +help`);
 });
 
 client.on("guildCreate", guild => {
@@ -178,33 +178,12 @@ client.on("message", message => {
     message.reply("Lord Grape is the greatest");
   }
   
-  //Admin commands
-  else if(message.channel.type!=="dm" && message.member.hasPermission("ADMINISTRATOR")){//make sure we are in a server and have admin powers
-    if(command === "addrole"){
-      try{
-        var mentions = message.mentions.members.array();
-        var role = args[1];
-        var roles = message.guild.roles.array();
-        var hasResult = false;
-        for(i = 0; i<roles.length;i++){
-          if(roles[i].name.toLowerCase() === role.toLowerCase()){
-            mentions[0].addRole(roles[i])
-            .then(member=>message.reply(`Added role ${role} to ${mentions[0].displayName}.`))
-            .catch(error=>message.reply(`Failed to add role
-            ${error}`));
-            hasResult = true;
-          }
-        }
-        if(!hasResult){
-          message.reply(`The role was not found.`);
-        }
-      }catch(e){
-        message.channel.send(`An error occured adding a role. Make sure your command is in the form +addRole [@mentionUsername] [role]
-        ${e}`);
-      }
-    }
+  //server commands
+  else if(message.channel.type!=="dm"){//make sure we are in a server
+    var recognized = false;
     
-    else if(command === "ban"){//ban user
+    if(command === "ban" && message.member.hasPermission("BAN_MEMBERS")){//ban user
+      recognized = true;
       try{
         var mentions = message.mentions.members.array();//find all the mentions of other users
         
@@ -217,7 +196,7 @@ client.on("message", message => {
             reason+=args[i]+" ";
           }//the rest of the arguments become reason for ban
           mentions[0].createDM()//Direct Message the user the reason for the ban
-          .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you`)
+          .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you.`)
             .then(dmMessage=>{//then ban them
               mentions[0].ban(reason);
               message.reply(`You banned ${mentions[0].displayName}.`);
@@ -238,46 +217,12 @@ client.on("message", message => {
           the bot may not have high enough permissions to ban the user`);
         }
       }catch(error){//notify user that the +ban function encountered an error
-        message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+        message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that I have permission to ban users \n"+error);
       }
     }
     
-    else if(command === "create"){//create a channel
-      message.guild.createChannel(args[0], "text")
-      .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
-      .catch(function(error){
-          message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that this bot has permission to create channels\n"+error);
-      });
-    }
-    
-    else if(command === "createcat"){
-      message.guild.createChannel(args[0], "category")
-      .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
-      .catch(function(error){
-          message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that this bot has permission to create categories\n"+error);
-      });
-    }
-    
-    else if(command === "delete"){
-      message.channel.delete("BienfromageBot deleted the channel")
-      .then(channel => {console.log(`Deleted channel ${channel.name}`);})
-      .catch(function(error){
-          message.channel.send(error);
-      });
-    }
-    
-    else if(command === "demote"){
-      try{
-      var mentions = message.mentions.members.array();//find all the mentions of other users
-        mentions[0].setRoles([])//set user roles to none
-          .then(member => message.reply(`demoted ${mentions[0].displayName}`))
-          .catch(error=>message.reply(`Failed to demote ${mentions[0].displayName}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
-      }catch(error){
-        message.reply(`Error: make sure your command is in the form '+demote [@mentionUsername]'`);
-      }
-    }
-    
-    else if(command === "kick"){//ban user
+    else if(command === "kick" && message.member.hasPermission("KICK_MEMBERS")){//ban user
+    recognized = true;
       try{
         var mentions = message.mentions.members.array();//find all the mentions of other users
         
@@ -316,7 +261,8 @@ client.on("message", message => {
       }
     }
     
-    else if(command === "leave"){
+    else if(command === "leave" && message.member.hasPermission("BAN_MEMBERS")){
+      recognized = true;
       try{
         message.guild.leave()
         .then(console.log(`Left guild ${message.guild.name}`))
@@ -329,8 +275,80 @@ client.on("message", message => {
         }
       }
     }
+    
+    
+    if(message.member.hasPermission("MANAGE_ROLES")){//check for manage role permissions
+      if(command === "addrole"){
+        recognized = true;
+        try{
+          var mentions = message.mentions.members.array();
+          var role = args[1];
+          var roles = message.guild.roles.array();
+          var hasResult = false;
+          for(i = 0; i<roles.length;i++){
+            if(roles[i].name.toLowerCase() === role.toLowerCase()){
+              mentions[0].addRole(roles[i])
+              .then(member=>message.reply(`Added role ${role} to ${mentions[0].displayName}.`))
+              .catch(error=>message.reply(`Failed to add role
+              ${error}`));
+              hasResult = true;
+            }
+          }
+          if(!hasResult){
+            message.reply(`The role was not found.`);
+          }
+        }catch(e){
+          message.channel.send(`An error occured adding a role. Make sure your command is in the form +addRole [@mentionUsername] [role]
+          ${e}`);
+        }
+      }
+      
+      else if(command === "demote"){
+        recognized = true;
+        try{
+        var mentions = message.mentions.members.array();//find all the mentions of other users
+          mentions[0].setRoles([])//set user roles to none
+            .then(member => message.reply(`demoted ${mentions[0].displayName}`))
+            .catch(error=>message.reply(`Failed to demote ${mentions[0].displayName}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
+        }catch(error){
+          message.reply(`Error: make sure your command is in the form '+demote [@mentionUsername]'`);
+        }
+      }
+    }
+    if(message.member.hasPermission("MANAGE_CHANNELS")){
+      if(command === "create"){//create a channel
+      recognized = true;
+        message.guild.createChannel(args[0], "text")
+        .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that I have permission to create channels\n"+error);
+        });
+      }
+      
+      else if(command === "createcat"){
+        recognized = true;
+        message.guild.createChannel(args[0], "category")
+        .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that I have permission to create categories\n"+error);
+        });
+      }
+      
+      else if(command === "delete"){
+        recognized = true;
+        message.channel.delete()
+        .then(channel => {console.log(`Deleted channel ${channel.name}`);})
+        .catch(function(error){
+            message.channel.send(error);
+        });
+      }
+    }
+    
+    if(!recognized){
+      message.reply(`I don't recognize that command. If you typed an admin command, make sure you have the correct privileges and are not in a DM. To see the command list, type '+help'`);
+    }
   }else{
-    message.reply(`Command not recognized. If you typed an admin command, make sure you have admin privlidges and are not in a DM. To see the command list, type '+help'`);
+    message.reply(`I don't recognize that command. If you typed an admin command, make sure you have admin privileges and are not in a DM. To see the command list, type '+help'`);
   }
 });
 

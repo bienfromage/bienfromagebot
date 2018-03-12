@@ -1,7 +1,7 @@
 {
   "name": "Daedalus",
   "version": "1.0.0",
-  "description": "first discord bot",
+  "description": "Discord Server Management and Utility Bot",
   "main": "app.js",
   "scripts": {
     "start": "node app"
