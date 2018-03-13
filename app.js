@@ -33,13 +33,13 @@ client.on("ready", () => {
 client.on("guildCreate", guild => {
   // This event triggers when the bot joins a guild.
   console.log(`New guild joined: ${guild.name} (id: ${guild.id}). This guild has ${guild.memberCount} members!`);
-  client.user.setActivity(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers | +help`);
 });
 
 client.on("guildDelete", guild => {
   // this event triggers when the bot is removed from a guild.
   console.log(`I have been removed from: ${guild.name} (id: ${guild.id})`);
-  client.user.setActivity(`on ${client.guilds.size} servers`);
+  client.user.setActivity(`on ${client.guilds.size} servers | +help`);
 });
 
 client.on("message", message => {
@@ -94,7 +94,16 @@ client.on("message", message => {
   
   //Lists available commands.
   else if(command === "help"){
-    message.reply(`Here is a list of available commands:
+    const devUsernames = process.env.DEV_USERNAME.split(',');
+    const devIds = process.env.DEV_ID.split(',');
+    var index = -1;
+    for(i = 0; i < devIds.length; i++){
+      if(devIds[i] === message.author.id)
+        index = i;
+    }
+    if(index > -1 && devUsernames[index] === message.author.username){
+      message.author.createDM()//Direct Message the user the reason for the kick
+      .then(dm=>{dm.send(`Here is a list of available commands:
     +help - show available commands
     +ping - check for connection
     +say - echo arguments
@@ -112,8 +121,50 @@ client.on("message", message => {
     +leave - remove me from the server
     
     DM commands (developers only):
-    +dev ping - reply with your user info
-    +dev help - list developer commands (restricted command)`);
+    +dev - check if you are a developer
+    +dev help - list developer commands
+    +dev ping - reply with your user info`);
+        message.reply("I sent you a DM with the commands.");
+      })
+      .catch((error)=>{//if there's an error still send help
+        message.reply(`Here is a list of available commands:
+    +help - show available commands
+    +ping - check for connection
+    +say - echo arguments
+    +stat - statistics on users's current text channel
+    +whoisthegreatest - who is the greatest?
+    
+    Admin commands:
+    +addRole <@mentionUsername> - give a user an additional role
+    +ban <@mentionUsername> <reason> - ban a user
+    +create <name> - create channel of given name
+    +createCat <name> - create a new channel category of given name
+    +delete - delete current channel
+    +demote <@mentionUsername> - remove a users's server roles
+    +kick <@mentionUsername> <reason> kick a user
+    +leave - remove me from the server`);
+        console.log(error);
+      });
+      
+      
+    }else{
+      message.reply(`Here is a list of available commands:
+    +help - show available commands
+    +ping - check for connection
+    +say - echo arguments
+    +stat - statistics on users's current text channel
+    +whoisthegreatest - who is the greatest?
+    
+    Admin commands:
+    +addRole <@mentionUsername> - give a user an additional role
+    +ban <@mentionUsername> <reason> - ban a user
+    +create <name> - create channel of given name
+    +createCat <name> - create a new channel category of given name
+    +delete - delete current channel
+    +demote <@mentionUsername> - remove a users's server roles
+    +kick <@mentionUsername> <reason> kick a user
+    +leave - remove me from the server`);
+    }
   }
   
   //check connection command
@@ -182,104 +233,109 @@ client.on("message", message => {
   else if(message.channel.type!=="dm"){//make sure we are in a server
     var recognized = false;
     
-    if(command === "ban" && message.member.hasPermission("BAN_MEMBERS")){//ban user
+    if(command === "ban"){//ban user
       recognized = true;
-      try{
-        var mentions = message.mentions.members.array();//find all the mentions of other users
-        
-        if(mentions[0].bannable){//make sure they're not trying to ban an owner
-          var reason = "";
-          if(args.length <2){
-            reason = "an unspecified reason";
-          }
-          for(i = 1; i < args.length;i++){
-            reason+=args[i]+" ";
-          }//the rest of the arguments become reason for ban
-          mentions[0].createDM()//Direct Message the user the reason for the ban
-          .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you.`)
-            .then(dmMessage=>{//then ban them
-              mentions[0].ban(reason);
-              message.reply(`You banned ${mentions[0].displayName}.`);
-            })
-            .catch((error)=>{//if there's an error, say so and ban them anyway
-              message.reply("Error sending reason for ban");
-              mentions[0].ban(reason);
-              message.reply(`You banned ${mentions[0].displayName}.`);
-            });
-          })
-          .catch((error)=>{//if there's an error creating a DM, still ban the users
-            message.reply("Failed to send user reason for ban");
-            mentions[0].ban(reason);
-            message.reply(`You banned ${mentions[0].displayName}.`);
-          });
-        }else{//if user is unbannable, print error
-          message.reply(`${mentions[0].displayName} is unbannable. :grin:
-          the bot may not have high enough permissions to ban the user`);
-        }
-      }catch(error){//notify user that the +ban function encountered an error
-        message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that I have permission to ban users \n"+error);
-      }
-    }
-    
-    else if(command === "kick" && message.member.hasPermission("KICK_MEMBERS")){//ban user
-    recognized = true;
-      try{
-        var mentions = message.mentions.members.array();//find all the mentions of other users
-        
-        if(mentions[0].kickable){//make sure they're not trying to kick an owner
-          var reason = "";
-          if(args.length <2){
-            reason = "an unspecified reason";
-          }
-          for(i = 1; i < args.length;i++){
-            reason+=args[i]+" ";
-          }//the rest of the arguments become reason for kick
-          mentions[0].createDM()//Direct Message the user the reason for the kick
-          .then(dm=>{dm.send(`You have been kicked from ${message.guild.name} for ${reason}.`)
-            .then(dmMessage=>{//then kick them
-              mentions[0].kick(reason);
-              message.reply(`You kicked ${mentions[0].displayName}.`);
-            })
-            .catch((error)=>{//if there's an error, say so and kick them anyway
-              message.reply("Error sending reason for ban");
-              mentions[0].kick(reason);
-              message.reply(`You banned ${mentions[0].displayName}.`);
-              console.error;
-            });
-          })
-          .catch((error)=>{//if there's an error creating a DM, still kcik the users
-            message.reply(`Failed to send ${mentions[0].displayName} reason for ban`);
-            mentions[0].kick(reason);
-            message.reply(`You banned ${mentions[0].displayName}.`);
-          });
-        }else{//if user is unkickable, print error
-          message.reply(`${mentions[0].displayName} is unkickable. :grin:
-          the bot may not have high enough permissions to kick the user`);
-        }
-      }catch(error){//notify user that the +ban function encountered an error
-        message.channel.send("An error occured. Make sure your command is in the form '+kick [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
-      }
-    }
-    
-    else if(command === "leave" && message.member.hasPermission("BAN_MEMBERS")){
-      recognized = true;
-      try{
-        message.guild.leave()
-        .then(console.log(`Left guild ${message.guild.name}`))
-        .catch(console.error);
-      }catch(error){
+      if(checkPermission("BAN_MEMBERS",message,command)){
         try{
-          message.reply(`Error kicking bot`)
-        }catch(e){
-          console.log(error);
+          var mentions = message.mentions.members.array();//find all the mentions of other users
+          
+          if(mentions[0].bannable){//make sure they're not trying to ban an owner
+            var reason = "";
+            if(args.length <2){
+              reason = "an unspecified reason";
+            }
+            for(i = 1; i < args.length;i++){
+              reason+=args[i]+" ";
+            }//the rest of the arguments become reason for ban
+            mentions[0].createDM()//Direct Message the user the reason for the ban
+            .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you.`)
+              .then(dmMessage=>{//then ban them
+                mentions[0].ban(reason);
+                message.reply(`You banned ${mentions[0].displayName}.`);
+              })
+              .catch((error)=>{//if there's an error, say so and ban them anyway
+                message.reply("Error sending reason for ban");
+                mentions[0].ban(reason);
+                message.reply(`You banned ${mentions[0].displayName}.`);
+              });
+            })
+            .catch((error)=>{//if there's an error creating a DM, still ban the users
+              message.reply("Failed to send user reason for ban");
+              mentions[0].ban(reason);
+              message.reply(`You banned ${mentions[0].displayName}.`);
+            });
+          }else{//if user is unbannable, print error
+            message.reply(`${mentions[0].displayName} is unbannable. :grin:
+            the bot may not have high enough permissions to ban the user`);
+          }
+        }catch(error){//notify user that the +ban function encountered an error
+          message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that I have permission to ban users \n"+error);
         }
       }
     }
     
+    else if(command === "kick"){//ban user
+      recognized = true;
+      if(checkPermission("KICK_MEMBERS",message,command)){
+        try{
+          var mentions = message.mentions.members.array();//find all the mentions of other users
+          
+          if(mentions[0].kickable){//make sure they're not trying to kick an owner
+            var reason = "";
+            if(args.length <2){
+              reason = "an unspecified reason";
+            }
+            for(i = 1; i < args.length;i++){
+              reason+=args[i]+" ";
+            }//the rest of the arguments become reason for kick
+            mentions[0].createDM()//Direct Message the user the reason for the kick
+            .then(dm=>{dm.send(`You have been kicked from ${message.guild.name} for ${reason}.`)
+              .then(dmMessage=>{//then kick them
+                mentions[0].kick(reason);
+                message.reply(`You kicked ${mentions[0].displayName}.`);
+              })
+              .catch((error)=>{//if there's an error, say so and kick them anyway
+                message.reply("Error sending reason for ban");
+                mentions[0].kick(reason);
+                message.reply(`You banned ${mentions[0].displayName}.`);
+                console.error;
+              });
+            })
+            .catch((error)=>{//if there's an error creating a DM, still kick the users
+              message.reply(`Failed to send ${mentions[0].displayName} reason for ban`);
+              mentions[0].kick(reason);
+              message.reply(`You banned ${mentions[0].displayName}.`);
+            });
+          }else{//if user is unkickable, print error
+            message.reply(`${mentions[0].displayName} is unkickable. :grin:
+            the bot may not have high enough permissions to kick the user`);
+          }
+        }catch(error){//notify user that the +ban function encountered an error
+          message.channel.send("An error occured. Make sure your command is in the form '+kick [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+        }
+      }
+    }
     
-    if(message.member.hasPermission("MANAGE_ROLES")){//check for manage role permissions
-      if(command === "addrole"){
-        recognized = true;
+    else if(command === "leave"){
+      recognized = true;
+      if(checkPermission("ADMINISTRATOR",message,command)){
+        try{
+          message.guild.leave()
+          .then(console.log(`Left guild ${message.guild.name}`))
+          .catch(console.error);
+        }catch(error){
+          try{
+            message.reply(`Error kicking bot`)
+          }catch(e){
+            console.log(error);
+          }
+        }
+      }
+    }
+    
+    if(command === "addrole"){
+      recognized = true;
+      if(checkPermission("MANAGE_ROLES",message,command)){
         try{
           var mentions = message.mentions.members.array();
           var role = args[1];
@@ -302,11 +358,13 @@ client.on("message", message => {
           ${e}`);
         }
       }
-      
-      else if(command === "demote"){
-        recognized = true;
+    }
+    
+    else if(command === "demote"){
+      recognized = true;
+      if(checkPermission("MANAGE_ROLES",message,command)){
         try{
-        var mentions = message.mentions.members.array();//find all the mentions of other users
+          var mentions = message.mentions.members.array();//find all the mentions of other users
           mentions[0].setRoles([])//set user roles to none
             .then(member => message.reply(`demoted ${mentions[0].displayName}`))
             .catch(error=>message.reply(`Failed to demote ${mentions[0].displayName}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
@@ -315,41 +373,60 @@ client.on("message", message => {
         }
       }
     }
-    if(message.member.hasPermission("MANAGE_CHANNELS")){
-      if(command === "create"){//create a channel
+      
+    if(command === "create"){//create a channel
       recognized = true;
+      if(checkPermission("MANAGE_CHANNELS",message,command)){
         message.guild.createChannel(args[0], "text")
         .then(channel => {console.log(`Created new channel ${channel.name}`);message.reply(`Created new channel ${channel.name}`);})
         .catch(function(error){
             message.channel.send("An error occured. Make sure your command is in the form '+create [name]' and that I have permission to create channels\n"+error);
         });
       }
-      
-      else if(command === "createcat"){
-        recognized = true;
+    }
+    
+    else if(command === "createcat"){
+      recognized = true;
+      if(checkPermission("MANAGE_CHANNELS",message,command)){
         message.guild.createChannel(args[0], "category")
         .then(channel =>{ console.log(`Created new channel category ${channel.name}`);message.reply(`Created new channel category ${channel.name}`);})
         .catch(function(error){
             message.channel.send("An error occured. Make sure your command is in the form '+createCat [name]' and that I have permission to create categories\n"+error);
         });
       }
-      
-      else if(command === "delete"){
-        recognized = true;
-        message.channel.delete()
-        .then(channel => {console.log(`Deleted channel ${channel.name}`);})
-        .catch(function(error){
-            message.channel.send(error);
-        });
+    }
+    
+    else if(command === "delete"){
+      recognized = true;
+      if(checkPermission("MANAGE_CHANNELS",message,command)){
+        try{
+          message.channel.delete()
+          .then(channel => {console.log(`Deleted channel ${channel.name}`);})
+          .catch(function(error){
+              message.channel.send(error);
+          });
+        }catch(e){
+          message.channel.send("An error occured. Make sure your commmand is in the form '+delete' and that I have permission to create categories\n");
+        }
       }
     }
     
+    
     if(!recognized){
-      message.reply(`I don't recognize that command. If you typed an admin command, make sure you have the correct privileges and are not in a DM. To see the command list, type '+help'`);
+      message.reply(config.notFound);
     }
   }else{
-    message.reply(`I don't recognize that command. If you typed an admin command, make sure you have admin privileges and are not in a DM. To see the command list, type '+help'`);
+    message.reply(config.notFound);
   }
 });
 
 client.login(process.env.BOT_ID);
+
+function checkPermission(permission, message, command){
+  if(message.member.hasPermission(permission)){
+    return true;
+  }else{
+    message.reply(`My sensors indicate that you do not have sufficient permission to use the +${command} command.`);
+    return false;
+  }
+}
