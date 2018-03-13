@@ -62,7 +62,7 @@ client.on("message", message => {
   
   if(message.channel.type === "dm" && command === "dev"){
     try{
-      if(args[0] && args[0] === "ping"){
+      if(args[0] && args[0] === "ping"){//check if user has developer privledges from a secret list
         message.reply(`username: ${message.author.username}
         id: ${message.author.id}`);
       }else{
@@ -76,11 +76,64 @@ client.on("message", message => {
         if(index > -1 && devUsernames[index] === message.author.username){
           message.reply(`You have developer access`);
           if(args[0]){
-            if(args[0] === "help"){
+            if(args[0] === "help"){//print developer help commands
               message.reply(`Developer Commands:
-      +dev - check if you have developer access
-      +dev help - get a list of dev commands
-      +dev ping - return user information`);
+    +dev - check if you have developer access
+    +dev guilds - view connected guilds
+    +dev help - get a list of dev commands
+    +dev leave <server name> - leave a server
+    +dev ping - return user information`);
+            }else if(args[0] === "leave"){//remotely leave a server
+              try{
+                var guildName = "";
+                
+                for(i = 1; i<args.length; i++){//build guild name from arguments
+                  if(i>1)
+                    guildName+=" ";
+                  guildName+=args[i];
+                }
+                if(guildName){//check if I'm a part of that guild, if so prepare to leave
+                  guildName = guildName.toLowerCase();
+                  var myGuilds = client.guilds.array();
+                  var index = -1;
+                  for(i = 0; i<myGuilds.length;i++){
+                    if(myGuilds[i].name.toLowerCase() === guildName){
+                      index = i;
+                    }
+                  }
+                
+                  if(index > -1){//leave guild
+                    myGuilds[index].leave()
+                      .then(message.reply(`Left guild ${guildName}`))
+                      .catch(console.error);
+                  }else{//error message in case not a part of that guild
+                    message.reply(`I do not think I am a part of that guild.`);
+                  }
+                }else{
+                  message.reply(`I am not sure that you inputed a server name. Make sure your command is in the form '+dev leave [server name]'`);
+                }
+              }catch(error){
+                try{
+                  message.reply(`Error leaving: ${error}`);
+                }catch(e){
+                  console.log(error);
+                }
+              }
+            }else if(args[0] === "guilds"){//print list of guilds
+              try{
+                var myGuilds = client.guilds.array();
+                if(myGuilds.length<1){
+                  message.reply("I do not have any guilds stored in my memory banks");
+                }else{
+                  var names = "";
+                  for(i = 0; i<myGuilds.length;i++){
+                    names +="\n"+myGuilds[i].name;
+                  }
+                  message.reply(names);
+                }
+              }catch(error){
+                message.reply("Error finding guilds: "+error);
+              }
             }
           }
         }else{
@@ -92,7 +145,7 @@ client.on("message", message => {
     }
   }
   
-  //Lists available commands.
+  //Lists available commands. This works differently for developers and normal users so dev commands are not sent to normal users
   else if(command === "help"){
     const devUsernames = process.env.DEV_USERNAME.split(',');
     const devIds = process.env.DEV_ID.split(',');
@@ -121,9 +174,11 @@ client.on("message", message => {
     +leave - remove me from the server
     
     DM commands (developers only):
-    +dev - check if you are a developer
-    +dev help - list developer commands
-    +dev ping - reply with your user info`);
+    +dev - check if you have developer access
+    +dev guilds - view connected guilds
+    +dev help - get a list of dev commands
+    +dev leave <server name> - leave a server
+    +dev ping - return user information`);
         message.reply("I sent you a DM with the commands.");
       })
       .catch((error)=>{//if there's an error still send help
@@ -325,7 +380,7 @@ client.on("message", message => {
           .catch(console.error);
         }catch(error){
           try{
-            message.reply(`Error kicking bot`)
+            message.reply(`Error leaving: ${error}`);
           }catch(e){
             console.log(error);
           }
