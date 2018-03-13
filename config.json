@@ -1,4 +1,4 @@
 {
-  "prefix" : "~",
+  "prefix" : "+",
   "notFound":"Sorry, I do not recognize that command. Use ‘+help’ for a full list of commands. If something is broken, please @mention a Developer or other Staff Member for further assistance."
 }
