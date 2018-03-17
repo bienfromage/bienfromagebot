@@ -475,7 +475,7 @@ client.on("message", message => {
         .catch(error=>message.channel.send(`Error deleting visitor role: ${error}`));
       
       //add new role if not already a member
-      if(!message.member.roles.exists('id','405716515929980939') && !message.member.roles.exists('id','289610749951737857') && !message.member.roles.exists('id','405715454351507457')){
+      if(message.member.hasPermission("ADMINISTRATOR") || (!message.member.roles.exists('id','405716515929980939') && !message.member.roles.exists('id','289610749951737857') && !message.member.roles.exists('id','405715454351507457'))){
         var role = "";
         if(args[0] === 'c'){
           role = "405716515929980939";
