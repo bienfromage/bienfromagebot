@@ -388,7 +388,7 @@ client.on("message", message => {
       }
     }
     
-    if(command === "addrole"){
+    else if(command === "addrole"){
       recognized = true;
       if(checkPermission("MANAGE_ROLES",message,command)){
         try{
@@ -414,22 +414,8 @@ client.on("message", message => {
         }
       }
     }
-    
-    else if(command === "demote"){
-      recognized = true;
-      if(checkPermission("MANAGE_ROLES",message,command)){
-        try{
-          var mentions = message.mentions.members.array();//find all the mentions of other users
-          mentions[0].setRoles([])//set user roles to none
-            .then(member => message.reply(`demoted ${mentions[0].displayName}`))
-            .catch(error=>message.reply(`Failed to demote ${mentions[0].displayName}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
-        }catch(error){
-          message.reply(`Error: make sure your command is in the form '+demote [@mentionUsername]'`);
-        }
-      }
-    }
       
-    if(command === "create"){//create a channel
+    else if(command === "create"){//create a channel
       recognized = true;
       if(checkPermission("MANAGE_CHANNELS",message,command)){
         message.guild.createChannel(args[0], "text")
@@ -466,6 +452,48 @@ client.on("message", message => {
       }
     }
     
+    else if(command === "demote"){
+      recognized = true;
+      if(checkPermission("MANAGE_ROLES",message,command)){
+        try{
+          var mentions = message.mentions.members.array();//find all the mentions of other users
+          mentions[0].setRoles([])//set user roles to none
+            .then(member => message.reply(`demoted ${mentions[0].displayName}`))
+            .catch(error=>message.reply(`Failed to demote ${mentions[0].displayName}. Make sure this bot has high enough permissions and that your command is in the form '+demote [@mentionUsername]'`));
+        }catch(error){
+          message.reply(`Error: make sure your command is in the form '+demote [@mentionUsername]'`);
+        }
+      }
+    }
+    
+    else if(command === "div"){
+      recognized = true;
+      
+      //remove visitor role
+      message.member.removeRole('406100424853159936')
+        .then()
+        .catch(error=>message.channel.send(`Error deleting visitor role: ${error}`));
+      
+      //add new role if not already a member
+      if(!message.member.roles.exists('id','405716515929980939') && !message.member.roles.exists('id','289610749951737857') && !message.member.roles.exists('id','405715454351507457')){
+        var role = "";
+        if(args[0] === 'c'){
+          role = "405716515929980939";
+        }else if(args[0] === 'd'){
+          role = "405715454351507457";
+        }else if(args[0] === 's'){
+          role = "289610749951737857";
+        }
+        if(role){
+        //add new role
+          message.member.addRole(role)
+          .then(message.reply(`Added role ${message.guild.roles.find('id',role).name} to ${message.member.displayName}`))
+          .catch(error=>message.channel.send(`Error adding role: ${error}`));
+        }
+      }else{
+        message.reply(`You are already in a division. You must leave to join another one`);
+      }
+    }
     
     if(!recognized){
       message.reply(config.notFound);
