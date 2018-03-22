@@ -30,6 +30,38 @@ client.on("ready", () => {
   client.user.setActivity(`on ${client.guilds.size} servers | +help`);
 });
 
+client.on('guildMemberAdd', member => {
+  // Send the message to a designated channel on a server:
+  const channel = member.guild.channels.find('name', 'welcome');
+  // Do nothing if the channel wasn't found on this server
+  if (!channel) return;
+  
+  member.createDM()//Direct Message the user the reason for the kick
+      .then(dm=>{dm.send(`Hello, ${member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
+
+By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
+
+Guild Commands:
+'guild c' for the Cold Army (led by CDBColdflame)
+'guild d' for the Daemon Order (led by Abaddon)
+'guild s' for the Shadow Empire (led by Shadows)
+
+We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
+
+1. Don't disrespect others
+2. Try to stay active
+3. Ask for help if needed
+4. Keep idle chat in the #hub or your guild channels.
+5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
+6. Above all, have fun!
+
+As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help.`);})
+      .catch(console.error);
+  
+  // Send the message, mentioning the member
+  channel.send(`Welcome to the server, ${member}, check your DM's for a message from me. If you have DM's turned off, type '+welcome'`);
+});
+
 client.on("guildCreate", guild => {
   // This event triggers when the bot joins a guild.
   console.log(`New guild joined: ${guild.name} (id: ${guild.id}). This guild has ${guild.memberCount} members!`);
@@ -279,6 +311,28 @@ client.on("message", message => {
     }
   }
   
+  else if(command === "welcome"){
+    message.reply(`Hello, ${message.member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
+
+By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
+
+Guild Commands:
+'guild c' for the Cold Army (led by CDBColdflame)
+'guild d' for the Daemon Order (led by Abaddon)
+'guild s' for the Shadow Empire (led by Shadows)
+
+We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
+
+1. Don't disrespect others
+2. Try to stay active
+3. Ask for help if needed
+4. Keep idle chat in the #hub or your guild channels.
+5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
+6. Above all, have fun!
+
+As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help`);
+  }
+  
   //hehe
   else if(command === "whoisthegreatest"){
     message.reply("Lord Grape is the greatest");
@@ -466,7 +520,7 @@ client.on("message", message => {
       }
     }
     
-    else if(command === "div"){
+    else if(command === "guild"){
       recognized = true;
       
       //remove visitor role
@@ -489,6 +543,8 @@ client.on("message", message => {
           message.member.addRole(role)
           .then(message.reply(`Added role ${message.guild.roles.find('id',role).name} to ${message.member.displayName}`))
           .catch(error=>message.channel.send(`Error adding role: ${error}`));
+        }else{
+          message.reply(`I could not find that guild.`);
         }
       }else{
         message.reply(`You are already in a division. You must leave to join another one`);
