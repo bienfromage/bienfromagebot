@@ -37,24 +37,21 @@ client.on('guildMemberAdd', member => {
   if (!channel) return;
   
   member.createDM()//Direct Message the user the reason for the kick
-      .then(dm=>{dm.send(`Hello, ${member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
-By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
-Guild Commands:
-'guild c' for the Cold Army (led by CDBColdflame)
-'guild d' for the Daemon Order (led by Abaddon)
-'guild s' for the Shadow Empire (led by Shadows)
-We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
-1. Don't disrespect others
-2. Try to stay active
-3. Ask for help if needed
-4. Keep idle chat in the #hub or your guild channels.
-5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
-6. Above all, have fun!
-As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help.`);})
+      .then(dm=>{dm.send(`Hello, ${member}! ${config.welcome}`);})
       .catch(console.error);
   
   // Send the message, mentioning the member
-  channel.send(`Welcome to the server, ${member}, check your DM's for a message from me. If you have DM's turned off, type '+welcome'`);
+  channel.send(`Welcome to the server, ${member}, I sent you a DM with a welcome message. You are guild member number ${member.guild.members.size}'`);
+  if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
+    member.addRole(member.guild.roles.find('name','Visitor'));
+  }else{//Otherwise, I'll create my OWN role BWAHAHA.
+    member.guild.createRole({
+      name: 'Visitor',
+      color: 'BLUE',
+    })
+      .then(role => member.addRole(role))
+      .catch(console.error);
+  }
 });
 
 client.on("guildCreate", guild => {
@@ -104,12 +101,7 @@ client.on("message", message => {
           message.reply(`You have developer access`);
           if(args[0]){
             if(args[0] === "help"){//print developer help commands
-              message.reply(`Developer Commands:
-    +dev - check if you have developer access
-    +dev guilds - view connected guilds
-    +dev help - get a list of dev commands
-    +dev leave <server name> - leave a server
-    +dev ping - return user information`);
+              message.reply(`${config.devHelp}`);
             }else if(args[0] === "leave"){//remotely leave a server
               try{
                 var guildName = "";
@@ -183,69 +175,17 @@ client.on("message", message => {
     }
     if(index > -1 && devUsernames[index] === message.author.username){
       message.author.createDM()//Direct Message the user the reason for the kick
-      .then(dm=>{dm.send(`Here is a list of available commands:
-    +help - show available commands
-    +ping - check for connection
-    +say - echo arguments
-    +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?
-    
-    Admin commands:
-    +addRole <@mentionUsername> - give a user an additional role
-    +ban <@mentionUsername> <reason> - ban a user
-    +create <name> - create channel of given name
-    +createCat <name> - create a new channel category of given name
-    +delete - delete current channel
-    +demote <@mentionUsername> - remove a users's server roles
-    +kick <@mentionUsername> <reason> kick a user
-    +leave - remove me from the server
-    
-    DM commands (developers only):
-    +dev - check if you have developer access
-    +dev guilds - view connected guilds
-    +dev help - get a list of dev commands
-    +dev leave <server name> - leave a server
-    +dev ping - return user information`);
+      .then(dm=>{dm.send(`${config.help}${config.devHelp}`);
         message.reply("I sent you a DM with the commands.");
       })
       .catch((error)=>{//if there's an error still send help
-        message.reply(`Here is a list of available commands:
-    +help - show available commands
-    +ping - check for connection
-    +say - echo arguments
-    +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?
-    
-    Admin commands:
-    +addRole <@mentionUsername> - give a user an additional role
-    +ban <@mentionUsername> <reason> - ban a user
-    +create <name> - create channel of given name
-    +createCat <name> - create a new channel category of given name
-    +delete - delete current channel
-    +demote <@mentionUsername> - remove a users's server roles
-    +kick <@mentionUsername> <reason> kick a user
-    +leave - remove me from the server`);
+        message.reply(`${config.help}`);
         console.log(error);
       });
       
       
     }else{
-      message.reply(`Here is a list of available commands:
-    +help - show available commands
-    +ping - check for connection
-    +say - echo arguments
-    +stat - statistics on users's current text channel
-    +whoisthegreatest - who is the greatest?
-    
-    Admin commands:
-    +addRole <@mentionUsername> - give a user an additional role
-    +ban <@mentionUsername> <reason> - ban a user
-    +create <name> - create channel of given name
-    +createCat <name> - create a new channel category of given name
-    +delete - delete current channel
-    +demote <@mentionUsername> - remove a users's server roles
-    +kick <@mentionUsername> <reason> kick a user
-    +leave - remove me from the server`);
+      message.reply(`${config.help}`);
     }
   }
   
@@ -307,20 +247,7 @@ client.on("message", message => {
   }
   
   else if(command === "welcome"){
-    message.channel.send(`Hello, ${message.member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
-By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
-Guild Commands:
-'guild c' for the Cold Army (led by CDBColdflame)
-'guild d' for the Daemon Order (led by Abaddon)
-'guild s' for the Shadow Empire (led by Shadows)
-We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
-1. Don't disrespect others
-2. Try to stay active
-3. Ask for help if needed
-4. Keep idle chat in the #hub or your guild channels.
-5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
-6. Above all, have fun!
-As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help`);
+    message.channel.send(`Hello, ${message.member}! ${config.welcome}`);
   }
   
   //hehe
