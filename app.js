@@ -36,23 +36,20 @@ client.on('guildMemberAdd', member => {
   // Do nothing if the channel wasn't found on this server
   if (!channel) return;
   
-  member.addRole("406100424853159936")
-    .then()
-    .catch(error=>message.reply(`Failed to add role
-    ${error}`));
-  
   member.createDM()//Direct Message the user the reason for the kick
       .then(dm=>{dm.send(`Hello, ${member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
-
+By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
+Guild Commands:
+'guild c' for the Cold Army (led by CDBColdflame)
+'guild d' for the Daemon Order (led by Abaddon)
+'guild s' for the Shadow Empire (led by Shadows)
 We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
-
 1. Don't disrespect others
 2. Try to stay active
 3. Ask for help if needed
 4. Keep idle chat in the #hub or your guild channels.
 5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
 6. Above all, have fun!
-
 As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help.`);})
       .catch(console.error);
   
@@ -191,10 +188,9 @@ client.on("message", message => {
     +ping - check for connection
     +say - echo arguments
     +stat - statistics on users's current text channel
-    +welcome - view server welcome message
     +whoisthegreatest - who is the greatest?
     
-    Server commands:
+    Admin commands:
     +addRole <@mentionUsername> - give a user an additional role
     +ban <@mentionUsername> <reason> - ban a user
     +create <name> - create channel of given name
@@ -218,10 +214,9 @@ client.on("message", message => {
     +ping - check for connection
     +say - echo arguments
     +stat - statistics on users's current text channel
-    +welcome - view server welcome message
     +whoisthegreatest - who is the greatest?
     
-    Server commands:
+    Admin commands:
     +addRole <@mentionUsername> - give a user an additional role
     +ban <@mentionUsername> <reason> - ban a user
     +create <name> - create channel of given name
@@ -240,7 +235,6 @@ client.on("message", message => {
     +ping - check for connection
     +say - echo arguments
     +stat - statistics on users's current text channel
-    +welcome - view server welcome message
     +whoisthegreatest - who is the greatest?
     
     Admin commands:
@@ -314,23 +308,18 @@ client.on("message", message => {
   
   else if(command === "welcome"){
     message.channel.send(`Hello, ${message.member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
-
 By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
-
 Guild Commands:
 'guild c' for the Cold Army (led by CDBColdflame)
 'guild d' for the Daemon Order (led by Abaddon)
 'guild s' for the Shadow Empire (led by Shadows)
-
 We'd like to ask that you please follow all server rules as it will make all our experiences more enjoyable.
-
 1. Don't disrespect others
 2. Try to stay active
 3. Ask for help if needed
 4. Keep idle chat in the #hub or your guild channels.
 5. Don't post random and unsupported servers in our chat (Failure to comply with this rule will result in an immediate ban
 6. Above all, have fun!
-
 As a final note, we're update our media and servers regularly, so stay tuned and check the news channel for more info! If you have any further questions or concerns, feel free to contact any of our Staff, they'd be happy to help`);
   }
   
@@ -520,6 +509,45 @@ As a final note, we're update our media and servers regularly, so stay tuned and
         }
       }
     }
+    
+    else if(command === "guild"){
+      recognized = true;
+      
+      //remove visitor role
+      message.member.removeRole('406100424853159936')
+        .then()
+        .catch(error=>message.channel.send(`Error deleting visitor role: ${error}`));
+      
+      //add new role if not already a member
+      if(message.member.hasPermission("ADMINISTRATOR") || (!message.member.roles.exists('id','405716515929980939') && !message.member.roles.exists('id','289610749951737857') && !message.member.roles.exists('id','405715454351507457'))){
+        var role = "";
+        if(args[0] === 'c'){
+          role = "405716515929980939";
+        }else if(args[0] === 'd'){
+          role = "405715454351507457";
+        }else if(args[0] === 's'){
+          role = "289610749951737857";
+        }
+        if(role){
+        //add new role
+          message.member.addRole(role)
+          .then(message.reply(`Added role ${message.guild.roles.find('id',role).name} to ${message.member.displayName}`))
+          .catch(error=>message.channel.send(`Error adding role: ${error}`));
+        }else{
+          message.reply(`I could not find that guild.`);
+        }
+      }else{
+        message.reply(`You are already in a division. You must leave to join another one`);
+      }
+    }
+    
+    if(!recognized){
+      message.reply(config.notFound);
+    }
+  }else{
+    message.reply(config.notFound);
+  }
+});
 
 client.login(process.env.BOT_ID);
 
