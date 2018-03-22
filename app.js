@@ -312,7 +312,7 @@ client.on("message", message => {
   }
   
   else if(command === "welcome"){
-    message.reply(`Hello, ${message.member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
+    message.channel.send(`Hello, ${message.member}! Our Server is run by our wonderful staff and the board of directors, consisting of Abaddon, Anna, bienfromage, ColdFlame, Dayti, and Shadows.
 
 By default, you are marked as a Visitor. In order to use voice channels and gain other privileges, please join one of our guilds. To do so, go to the Hub and type in the command for the guild you wish to join.
 
@@ -406,14 +406,14 @@ As a final note, we're update our media and servers regularly, so stay tuned and
               .catch((error)=>{//if there's an error, say so and kick them anyway
                 message.reply("Error sending reason for ban");
                 mentions[0].kick(reason);
-                message.reply(`You banned ${mentions[0].displayName}.`);
+                message.reply(`You kicked ${mentions[0].displayName}.`);
                 console.error;
               });
             })
             .catch((error)=>{//if there's an error creating a DM, still kick the users
               message.reply(`Failed to send ${mentions[0].displayName} reason for ban`);
               mentions[0].kick(reason);
-              message.reply(`You banned ${mentions[0].displayName}.`);
+              message.reply(`You kicked ${mentions[0].displayName}.`);
             });
           }else{//if user is unkickable, print error
             message.reply(`${mentions[0].displayName} is unkickable. :grin:
