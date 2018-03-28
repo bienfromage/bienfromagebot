@@ -41,7 +41,7 @@ client.on('guildMemberAdd', member => {
       .catch(console.error);
   
   // Send the message, mentioning the member
-  channel.send(`Welcome to the server, ${member}, I sent you a DM with a welcome message. You are guild member number ${member.guild.members.size}'`);
+  channel.send(`Welcome to the server, ${member}, I sent you a DM with a welcome message. You are guild member number ${member.guild.members.size}.`);
   if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
     member.addRole(member.guild.roles.find('name','Visitor'));
   }else{//Otherwise, I'll create my OWN role BWAHAHA.
