@@ -1,3 +1,3 @@
 # Bienfromagebot
 
-A chat bot for Discord App, in discord.js.
+A utility and moderation chatbot for Discord App, written in discord.js.
