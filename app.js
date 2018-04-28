@@ -1,7 +1,8 @@
 // Load up the discord.js library
 const Discord = require("discord.js");
+const MongoClient = require("mongodb").MongoClient;
 
-var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
+var server_port = 8080;
 var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
 const token = process.env.BOT_ID;
 
@@ -31,26 +32,53 @@ client.on("ready", () => {
 });
 
 client.on('guildMemberAdd', member => {
-  // Send the message to a designated channel on a server:
-  const channel = member.guild.channels.find('name', 'welcome');
-  // Do nothing if the channel wasn't found on this server
-  if (!channel) return;
-  
-  member.createDM()//Direct Message the user the reason for the kick
-      .then(dm=>{dm.send(`Hello, ${member}! ${config.welcome}`);})
-      .catch(console.error);
-  
-  // Send the message, mentioning the member
-  channel.send(`Welcome to the server, ${member}, I sent you a DM with a welcome message. You are guild member number ${member.guild.members.size}.`);
-  if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
-    member.addRole(member.guild.roles.find('name','Visitor'));
-  }else{//Otherwise, I'll create my OWN role BWAHAHA.
-    member.guild.createRole({
-      name: 'Visitor',
-      color: 'BLUE',
-    })
-      .then(role => member.addRole(role))
-      .catch(console.error);
+  try{
+    // Send the message to a designated channel on a server:
+    const channel = member.guild.channels.find('name', 'welcome');
+    // Do nothing if the channel wasn't found on this server
+    if (!channel) return;
+    
+    //find welcome message in mongodb
+    const url = process.env.MONGODB_URL;
+    var welcomeMessage = config.welcome;
+    try{
+      MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        var dbo = db.db("mydb");
+        dbo.collection("servers").find({identifier:member.guild.id}).toArray(function(err, result) {
+          if (err) throw err;
+          //make sure only one database is found
+          if(result.length==1){
+            welcomeMessage = result[0].welcome;//set Welcome Message to value found in database
+            member.createDM()
+              .then(dm=>{dm.send(`Hello ${member}! ${welcomeMessage}`)
+                            .catch(console.error);})
+              .catch(console.error);
+          }else{
+            console.log("More than one entry was found!\n"+result);
+          }
+          db.close();
+        });
+      });
+    }catch(e){
+      console.log("Error connecting to MongoDB: "+e);
+    }
+    
+    // Send the message, mentioning the member
+    channel.send(`Welcome to the server, ${member}, you are guild member number ${member.guild.members.size}.`);
+      
+    if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
+      member.addRole(member.guild.roles.find('name','Visitor'));
+    }else{//Otherwise, I'll create my OWN role BWAHAHA.
+      member.guild.createRole({
+        name: 'Visitor',
+        color: 'BLUE',
+      })
+        .then(role => member.addRole(role))
+        .catch(console.error);
+    }
+  }catch(e){
+    console.log("Welcome message error.");
   }
 });
 
@@ -58,12 +86,47 @@ client.on("guildCreate", guild => {
   // This event triggers when the bot joins a guild.
   console.log(`New guild joined: ${guild.name} (id: ${guild.id}). This guild has ${guild.memberCount} members!`);
   client.user.setActivity(`on ${client.guilds.size} servers | +help`);
+  
+  try{
+    //add guild to records
+    const url = process.env.MONGODB_URL;
+    MongoClient.connect(url, function(err, db) {
+      if (err) throw err;
+      var dbo = db.db("mydb");
+      var myobj = { name: guild.name, identifier:guild.id ,welcome: " welcome to "+guild.name};
+      dbo.collection("servers").insertOne(myobj, function(err, res) {
+        if (err) throw err;
+        console.log("Added guild successfully");
+        db.close();
+      });
+    });
+  }catch(e){
+    console.log("Error adding guild to record: "+e);
+  }
 });
 
 client.on("guildDelete", guild => {
   // this event triggers when the bot is removed from a guild.
   console.log(`I have been removed from: ${guild.name} (id: ${guild.id})`);
   client.user.setActivity(`on ${client.guilds.size} servers | +help`);
+  
+  //remove guild from database listings
+  try{
+    const url = process.env.MONGODB_URL;
+    
+    MongoClient.connect(url, function(err, db) {
+      if (err) throw err;
+      var dbo = db.db("mydb");
+      var myquery = { identifier: guild.id };
+      dbo.collection("servers").deleteOne(myquery, function(err, obj) {
+        if (err) throw err;
+        console.log("1 document deleted");
+        db.close();
+      });
+    });
+  }catch(e){
+    console.log("Error removing guild record: "+e);
+  }
 });
 
 client.on("message", message => {
@@ -174,7 +237,7 @@ client.on("message", message => {
         index = i;
     }
     if(index > -1 && devUsernames[index] === message.author.username){
-      message.author.createDM()//Direct Message the user the reason for the kick
+      message.author.createDM()//Direct Message the user
       .then(dm=>{dm.send(`${config.help}${config.devHelp}`);
         message.reply("I sent you a DM with the commands.");
       })
@@ -247,7 +310,30 @@ client.on("message", message => {
   }
   
   else if(command === "welcome"){
-    message.channel.send(`Hello, ${message.member}! ${config.welcome}`);
+    const url = process.env.MONGODB_URL;
+    var welcomeMessage = config.welcome;
+    if(message.channel.type!=="dm"){
+      try{
+        var member = message.member;
+        MongoClient.connect(url, function(err, db) {
+          if (err) throw err;
+          var dbo = db.db("mydb");
+          dbo.collection("servers").find({identifier:member.guild.id}).toArray(function(err, result) {
+            if (err) throw err;
+            //make sure only one database is found
+            if(result.length!=1){
+              console.log("More than one entry or no entry for this database found!");
+            }else{
+              welcomeMessage = result[0].welcome;
+              message.channel.send(`Hello, ${message.member}! ${welcomeMessage}`);
+            }
+            db.close();
+          });
+        });
+      }catch(e){
+        console.log("Error connecting to MongoDB: "+e);
+      }
+    }
   }
   
   //hehe
@@ -269,30 +355,17 @@ client.on("message", message => {
             var reason = "";
             if(args.length <2){
               reason = "an unspecified reason";
+            }else{
+              for(i = 1; i < args.length;i++){
+                reason+=args[i]+" ";
+              }//the rest of the arguments become reason for ban
             }
-            for(i = 1; i < args.length;i++){
-              reason+=args[i]+" ";
-            }//the rest of the arguments become reason for ban
-            mentions[0].createDM()//Direct Message the user the reason for the ban
-            .then(dm=>{dm.send(`You have been banned from ${message.guild.name} for ${reason}, if you feel this ban was unjust or a misunderstanding has occurred, please appeal your ban on our website. Fill out the appropriate form on the “Appeals” page under “Contact Us”, we will address it as soon as possible. Thank you.`)
-              .then(dmMessage=>{//then ban them
-                mentions[0].ban(reason);
-                message.reply(`You banned ${mentions[0].displayName}.`);
-              })
-              .catch((error)=>{//if there's an error, say so and ban them anyway
-                message.reply("Error sending reason for ban");
-                mentions[0].ban(reason);
-                message.reply(`You banned ${mentions[0].displayName}.`);
-              });
-            })
-            .catch((error)=>{//if there's an error creating a DM, still ban the users
-              message.reply("Failed to send user reason for ban");
-              mentions[0].ban(reason);
-              message.reply(`You banned ${mentions[0].displayName}.`);
-            });
+            
+            mentions[0].ban(reason).catch(e);
+            message.reply(`ban command sent for ${mentions[0].displayName}`);
           }else{//if user is unbannable, print error
             message.reply(`${mentions[0].displayName} is unbannable. :grin:
-            the bot may not have high enough permissions to ban the user`);
+I may not have high enough permissions to ban the user`);
           }
         }catch(error){//notify user that the +ban function encountered an error
           message.channel.send("An error occured. Make sure your command is in the form '+ban [@mentionUsername] [reason]' and that I have permission to ban users \n"+error);
@@ -300,7 +373,7 @@ client.on("message", message => {
       }
     }
     
-    else if(command === "kick"){//ban user
+    else if(command === "kick"){//kick user
       recognized = true;
       if(checkPermission("KICK_MEMBERS",message,command)){
         try{
@@ -310,34 +383,22 @@ client.on("message", message => {
             var reason = "";
             if(args.length <2){
               reason = "an unspecified reason";
+            }else{
+              for(i = 1; i < args.length;i++){
+                reason+=args[i]+" ";
+              }//the rest of the arguments become reason for kick
             }
-            for(i = 1; i < args.length;i++){
-              reason+=args[i]+" ";
-            }//the rest of the arguments become reason for kick
-            mentions[0].createDM()//Direct Message the user the reason for the kick
-            .then(dm=>{dm.send(`You have been kicked from ${message.guild.name} for ${reason}.`)
-              .then(dmMessage=>{//then kick them
-                mentions[0].kick(reason);
-                message.reply(`You kicked ${mentions[0].displayName}.`);
-              })
-              .catch((error)=>{//if there's an error, say so and kick them anyway
-                message.reply("Error sending reason for ban");
-                mentions[0].kick(reason);
-                message.reply(`You kicked ${mentions[0].displayName}.`);
-                console.error;
-              });
-            })
-            .catch((error)=>{//if there's an error creating a DM, still kick the users
-              message.reply(`Failed to send ${mentions[0].displayName} reason for ban`);
-              mentions[0].kick(reason);
-              message.reply(`You kicked ${mentions[0].displayName}.`);
-            });
+            
+            mentions[0].kick(reason)
+                    .catch(console.error);
+                    
+            message.reply(`kick command sent for ${mentions[0].displayName}`);
           }else{//if user is unkickable, print error
             message.reply(`${mentions[0].displayName} is unkickable. :grin:
-            the bot may not have high enough permissions to kick the user`);
+I may not have high enough permissions to kick the user`);
           }
-        }catch(error){//notify user that the +ban function encountered an error
-          message.channel.send("An error occured. Make sure your command is in the form '+kick [@mentionUsername] [reason]' and that this bot has permission to ban users \n"+error);
+        }catch(error){//notify user that the +kick function encountered an error
+          message.channel.send("An error occured. Make sure your command is in the form '+kick [@mentionUsername] [reason]' and that I have permission to kick users \n"+error);
         }
       }
     }
@@ -437,37 +498,65 @@ client.on("message", message => {
       }
     }
     
-    else if(command === "guild"){
+    else if(command === "info"){//dev command, find the database id
       recognized = true;
-      
-      //remove visitor role
-      message.member.removeRole('406100424853159936')
-        .then()
-        .catch(error=>message.channel.send(`Error deleting visitor role: ${error}`));
-      
-      //add new role if not already a member
-      if(message.member.hasPermission("ADMINISTRATOR") || (!message.member.roles.exists('id','405716515929980939') && !message.member.roles.exists('id','289610749951737857') && !message.member.roles.exists('id','405715454351507457'))){
-        var role = "";
-        if(args[0] === 'c'){
-          role = "405716515929980939";
-        }else if(args[0] === 'd'){
-          role = "405715454351507457";
-        }else if(args[0] === 's'){
-          role = "289610749951737857";
+      if(checkPermission("ADMINISTRATOR",message,command)){
+        try{
+          message.reply("Name: "+message.member.guild.name+"\nId: "+message.member.guild.id);
+        }catch(error){
+          message.reply("Error"+error);
         }
-        if(role){
-        //add new role
-          message.member.addRole(role)
-          .then(message.reply(`Added role ${message.guild.roles.find('id',role).name} to ${message.member.displayName}`))
-          .catch(error=>message.channel.send(`Error adding role: ${error}`));
-        }else{
-          message.reply(`I could not find that guild.`);
-        }
-      }else{
-        message.reply(`You are already in a division. You must leave to join another one`);
       }
     }
     
+    else if(command === "setwelcome"){
+      recognized = true;
+      if(checkPermission("ADMINISTRATOR",message,command)){
+        try{
+          //get new message
+          var welcomeMessage = "";
+          
+          for(i = 0; i<args.length; i++){
+            welcomeMessage+=args[i]+" ";
+          }
+          
+          //make suer message length is greater than 0
+          if(welcomeMessage.trim().length>0){
+            const url = process.env.MONGODB_URL;
+            
+            //create new server object
+            var serverObj = {name: message.member.guild.name, identifier:message.member.guild.id, welcome: welcomeMessage};
+            
+            MongoClient.connect(url, function(err, db) {
+              if (err) throw err;
+              var dbo = db.db("mydb");
+              var myquery = { identifier: message.member.guild.id};
+              //delete old record
+              dbo.collection("servers").deleteOne(myquery, function(err, obj) {
+                if (err) throw err;
+                console.log("1 document deleted");
+                db.close();
+              });
+              
+              //insert new record
+              dbo.collection("servers").insertOne(serverObj, function(err, res) {
+                if (err) throw err;
+                console.log("Changed welcome message for "+message.member.guild.name);
+                db.close();
+              });
+            });
+            message.reply("Record submission successful. Your new message is:\n"+welcomeMessage);
+          }else{
+            message.reply("It seems you are attempting to set your server welcome message to a blank line. Make sure your command has the form +setWelcome [message]");
+          }
+        }
+        catch(e){
+          message.reply("Error: "+e);
+        }
+      }
+    }
+    
+    //alert the user if no commands are found
     if(!recognized){
       message.reply(config.notFound);
     }
