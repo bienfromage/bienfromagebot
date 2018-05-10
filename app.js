@@ -32,31 +32,54 @@ client.on("ready", () => {
 });
 
 client.on('guildMemberAdd', member => {
+  if(member.user.bot) return;
+  
   try{
-    // Send the message to a designated channel on a server:
-    const channel = member.guild.channels.find('name', 'welcome');
-    // Do nothing if the channel wasn't found on this server
-    if (!channel) return;
-    
     //find welcome message in mongodb
     const url = process.env.MONGODB_URL;
-    var welcomeMessage = config.welcome;
+    var welcomeMessage = "Welcome to "+member.guild.name;
+    var channelName = "welcome";
     try{
       MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        dbo.collection("servers").find({identifier:member.guild.id}).toArray(function(err, result) {
+        dbo.collection("servers").findOne({identifier:member.guild.id}, function(err, result) {
           if (err) throw err;
-          //make sure only one database is found
-          if(result.length==1){
-            welcomeMessage = result[0].welcome;//set Welcome Message to value found in database
-            member.createDM()
-              .then(dm=>{dm.send(`Hello ${member}! ${welcomeMessage}`)
-                            .catch(console.error);})
-              .catch(console.error);
-          }else{
-            console.log("More than one entry was found!\n"+result);
+          
+          //find welcome message and welcome channel
+          welcomeMessage = result.welcome;
+          channelName = result.channel;
+          
+          //find the channel to send messages to
+          const channel = member.guild.channels.find('name', channelName);
+          
+          // Send the message to a designated channel on a server
+          if (channel){
+            // Send the message, mentioning the member
+            channel.send(`Welcome to the server, ${member}, you are guild member number ${member.guild.members.size}.`);
+              
+            if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
+              member.addRole(member.guild.roles.find('name','Visitor'));
+            }else{//Otherwise, I'll create my OWN role BWAHAHA.
+              member.guild.createRole({
+                name: 'Visitor',
+                color: 'BLUE',
+              })
+                .then(role => member.addRole(role))
+                .catch(console.error);
+            }
           }
+          
+          //Attempt to dm the new user:
+          if(!welcomeMessage) return;
+          
+          member.createDM()
+            .then(dm=>{
+              dm.send("Daedalus brings a welcome message from "+member.guild.name+":\n"+welcomeMessage)
+                .catch(e=>{if (channel) channel.send("Error sending welcome message: "+e+"\nTo view message, use '+welcome' command.");});
+            })
+            .catch(console.error);
+          
           db.close();
         });
       });
@@ -64,19 +87,6 @@ client.on('guildMemberAdd', member => {
       console.log("Error connecting to MongoDB: "+e);
     }
     
-    // Send the message, mentioning the member
-    channel.send(`Welcome to the server, ${member}, you are guild member number ${member.guild.members.size}.`);
-      
-    if(member.guild.roles.exists('name','Visitor')){//If the role 'Visitor' exists, add it.
-      member.addRole(member.guild.roles.find('name','Visitor'));
-    }else{//Otherwise, I'll create my OWN role BWAHAHA.
-      member.guild.createRole({
-        name: 'Visitor',
-        color: 'BLUE',
-      })
-        .then(role => member.addRole(role))
-        .catch(console.error);
-    }
   }catch(e){
     console.log("Welcome message error.");
   }
@@ -513,45 +523,58 @@ I may not have high enough permissions to kick the user`);
       recognized = true;
       if(checkPermission("ADMINISTRATOR",message,command)){
         try{
-          //get new message
-          var welcomeMessage = "";
+          const url = process.env.MONGODB_URL;
           
-          for(i = 0; i<args.length; i++){
-            welcomeMessage+=args[i]+" ";
+          //assemble message
+          var newWelcomeMessage = "";
+          for(i=0;i<args.length;i++){
+            newWelcomeMessage+=args[i]+" ";
           }
           
-          //make suer message length is greater than 0
-          if(welcomeMessage.trim().length>0){
-            const url = process.env.MONGODB_URL;
-            
-            //create new server object
-            var serverObj = {name: message.member.guild.name, identifier:message.member.guild.id, welcome: welcomeMessage};
-            
-            MongoClient.connect(url, function(err, db) {
+          MongoClient.connect(url, function(err, db) {
+            if (err) throw err;
+            var dbo = db.db("mydb");
+            var myquery = { identifier:message.guild.id};
+            var newvalues = { $set: {welcome:newWelcomeMessage } };
+            dbo.collection("servers").updateOne(myquery, newvalues, function(err, res) {
               if (err) throw err;
-              var dbo = db.db("mydb");
-              var myquery = { identifier: message.member.guild.id};
-              //delete old record
-              dbo.collection("servers").deleteOne(myquery, function(err, obj) {
-                if (err) throw err;
-                console.log("1 document deleted");
-                db.close();
-              });
-              
-              //insert new record
-              dbo.collection("servers").insertOne(serverObj, function(err, res) {
-                if (err) throw err;
-                console.log("Changed welcome message for "+message.member.guild.name);
-                db.close();
-              });
+              if(newWelcomeMessage)
+                message.reply("I set the welcome message to "+newWelcomeMessage);
+              else
+                message.reply("Blank input detected, in the future I will not DM new users with a welcome message.\n\nIf this was not your intention, try setting the welcome message again using the command +setWelcome [message]");
+              db.close();
             });
-            message.reply("Record submission successful. Your new message is:\n"+welcomeMessage);
-          }else{
-            message.reply("It seems you are attempting to set your server welcome message to a blank line. Make sure your command has the form +setWelcome [message]");
-          }
+          });
+        }catch(e){
+          message.reply("Error setting welcome message: "+e);
         }
-        catch(e){
-          message.reply("Error: "+e);
+      }
+    }
+    
+    else if(command === "setwelcomechannel"){//set channel for welcome messages
+      recognized = true;
+      if(checkPermission("ADMINISTRATOR",message,command)){
+        if(!args[0]){
+          message.reply("It appears you did not choose a channel name. Make sure your command has the form +setWelcomeChannel [channelName]");
+          return;
+        }
+        
+        try{
+          const url = process.env.MONGODB_URL;
+          
+          MongoClient.connect(url, function(err, db) {
+            if (err) throw err;
+            var dbo = db.db("mydb");
+            var myquery = { identifier:message.guild.id};
+            var newvalues = { $set: {channel:args[0] } };
+            dbo.collection("servers").updateOne(myquery, newvalues, function(err, res) {
+              if (err) throw err;
+              message.reply("I set the welcome channel to "+args[0]);
+              db.close();
+            });
+          });
+        }catch(e){
+          message.reply("Error setting welcome channel: "+e);
         }
       }
     }
