@@ -103,7 +103,7 @@ client.on("guildCreate", guild => {
     MongoClient.connect(url, function(err, db) {
       if (err) throw err;
       var dbo = db.db("mydb");
-      var myobj = { name: guild.name, identifier:guild.id ,welcome: " welcome to "+guild.name};
+      var myobj = { name: guild.name, identifier:guild.id ,welcome: " welcome to "+guild.name,channel:"welcome"};
       dbo.collection("servers").insertOne(myobj, function(err, res) {
         if (err) throw err;
         console.log("Added guild successfully");
